@@ -5,3 +5,9 @@ services:
       restart: unless-stopped
       env_file:
         - .env
+      networks:
+        - team5
+
+networks:
+  team5:
+    external: True
