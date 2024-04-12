@@ -90,8 +90,8 @@ class ticktominstreaming():
 if __name__ == '__main__':
 
     kafka_url = os.getenv('KAFKA_URL', 'default_url')
-    tick_topic = os.getenv('TICK_TOPIC', 'default_url')
-    min_topic = os.getenv('MIN_TOPIC', 'default_url')
+    tick_topic = 'stock_data_actions'
+    min_topic = 'ttmin'
 
     tick_streming = ticktominstreaming(kafka_url, tick_topic, min_topic)
     df_stream = tick_streming.read_stream()

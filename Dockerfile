@@ -15,7 +15,7 @@ ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-arm64
 WORKDIR ./myapp
 
 ENV KAFA_URL=kafka_url
-ENV TICK_TOPIC=tick_topic
-ENV MIN_TOPIC=min_topic
+#ENV TICK_TOPIC=tick_topic
+#ENV MIN_TOPIC=min_topic
 
 CMD ["python3", "main.py"]
