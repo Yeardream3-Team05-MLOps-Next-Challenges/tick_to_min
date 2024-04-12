@@ -1,17 +1,12 @@
-FROM python:3.10.13-slim
+FROM spark:python3
 
 WORKDIR /usr/src/app
 
 COPY . .
 
-RUN apt-get update && apt-get install -y openjdk-11-jdk procps \
-    && python -m pip install --upgrade pip\
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-arm64
-
+RUN python -m pip install --upgrade pip\
+    && pip install --no-cache-dir -r requirements.txt 
+    
 WORKDIR ./myapp
 
 ENV KAFA_URL=kafka_url
