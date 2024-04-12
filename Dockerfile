@@ -1,11 +1,16 @@
-FROM spark:python3
+FROM python:3.10.13-slim
 
 WORKDIR /usr/src/app
 
 COPY . .
 
-RUN python3 -m pip install --upgrade pip\
-    && pip install --no-cache-dir -r requirements.txt 
+RUN apt-get update && apt-get install -y openjdk-17-jdk procps \
+    && python -m pip install --upgrade pip\
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-arm64
 
 WORKDIR ./myapp
 
