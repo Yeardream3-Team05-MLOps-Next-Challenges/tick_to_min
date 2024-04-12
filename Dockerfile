@@ -4,9 +4,9 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN python -m pip install --upgrade pip\
+RUN python3 -m pip install --upgrade pip\
     && pip install --no-cache-dir -r requirements.txt 
-    
+
 WORKDIR ./myapp
 
 ENV KAFA_URL=kafka_url
