@@ -4,8 +4,11 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN python -m pip install --upgrade pip openjdk-11-jdk procps\
-    && pip install --no-cache-dir -r requirements.txt
+RUN ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-arm64 \
+    && python -m pip install --upgrade pip\
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-arm64
 
