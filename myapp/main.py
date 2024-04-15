@@ -54,6 +54,7 @@ class ticktominstreaming():
     def aggregate_ohlc(self, df):
         # 지연없이
         ohlc_df = df \
+                    .withWatermark("timestamp", "10 seconds") \
                     .groupBy(window(col("timestamp"), "1 minute")) \
                     .agg(first("price").alias("open"),
                         max("price").alias("high"),
