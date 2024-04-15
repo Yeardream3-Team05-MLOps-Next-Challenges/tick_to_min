@@ -3,7 +3,8 @@ from pyspark.sql.functions import window, col, min, max, first, last, from_json,
 from pyspark.sql.types import StructType, StringType, DoubleType, LongType, BooleanType
 
 import os
-
+import concurrent.futures
+import logging
 
 class ticktominstreaming():
     def __init__(self, kafka_url, tick_topic, min_topic) -> None:
@@ -16,8 +17,11 @@ class ticktominstreaming():
         self.spark = SparkSession \
             .builder \
             .appName("KafkaToSparkStreamingOHLC") \
-            .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.0') \
+            .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0') \
+            .config('spark.sql.streaming.checkpointLocation', '/tmp/checkpoint') \
             .getOrCreate()
+        
+        self.spark.sparkContext.setLogLevel("WARN")
 
         # 틱 데이터의 스키마 정의
         self.schema = StructType() \
@@ -48,14 +52,14 @@ class ticktominstreaming():
     def normalize_timestamp(self, df):
         # 타임스탬프를 5분 간격으로 정규화
         df = df.withColumn("timestamp", 
-                        expr("cast((cast(timestamp as long) / 60) * 60 as timestamp)"))
+                        expr("cast((cast(timestamp as long) / 300) * 300 as timestamp)"))
         return df
     
     def aggregate_ohlc(self, df):
         # 지연없이
         ohlc_df = df \
                     .withWatermark("timestamp", "10 seconds") \
-                    .groupBy(window(col("timestamp"), "1 minute")) \
+                    .groupBy(window(col("timestamp"), "5 minute")) \
                     .agg(first("price").alias("open"),
                         max("price").alias("high"),
                         min("price").alias("low"),
@@ -71,38 +75,72 @@ class ticktominstreaming():
         return ohlc_df
 
     def stream_to_console(self, ohlc_df):
-        query = ohlc_df \
-            .writeStream \
-            .outputMode("append") \
-            .format("console") \
-            .start()
+        try:
+            query = ohlc_df \
+                .writeStream \
+                .outputMode("append") \
+                .format("console") \
+                .start()
 
-        query.awaitTermination()
+            query.awaitTermination()
+        except Exception as e:
+            logging.error(f"스트리밍 중 오류 발생: {e}")
+            query.stop()
 
     def stream_to_kafka(self, ohlc_df):
-        query = ohlc_df \
-            .selectExpr("to_json(struct(*)) AS value") \
-            .writeStream \
-            .outputMode("append") \
-            .format("kafka") \
-            .option("kafka.bootstrap.servers", self.kafka_url) \
-            .option("topic", self.min_topic) \
-            .start()
-        
-        query.awaitTermination()
+        try:
+            query = ohlc_df \
+                .selectExpr("CAST(window.start AS STRING) AS key", "to_json(struct(*)) AS value") \
+                .writeStream \
+                .outputMode("append") \
+                .format("kafka") \
+                .option("kafka.bootstrap.servers", self.kafka_url) \
+                .option("topic", self.min_topic) \
+                .start()
+            
+            query.awaitTermination()
+        except Exception as e:
+            logging.error(f"Kafka로 스트리밍 중 오류 발생: {e}")
+            query.stop()
 
+    def run(self, ohlc_df):
+        # ThreadPoolExecutor를 사용하여 두 스트리밍 작업을 병렬로 실행
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.submit(self.stream_to_kafka, ohlc_df)
+            executor.submit(self.stream_to_console, ohlc_df)
+
+def set_logging(log_level):
+    # 로그 생성
+    logger = logging.getLogger()
+    # 로그 레벨 문자열을 적절한 로깅 상수로 변환
+    log_level_constant = getattr(logging, log_level, logging.INFO)
+    # 로그의 출력 기준 설정
+    logger.setLevel(log_level_constant)
+    # log 출력 형식
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # log를 console에 출력
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    # log를 파일에 출력
+    #file_handler = logging.FileHandler('GoogleTrendsBot.log')
+    #file_handler.setFormatter(formatter)
+    #logger.addHandler(file_handler)
 
 if __name__ == '__main__':
 
+    log_level = os.getenv('LOG_LEVEL', 'INFO')
+    set_logging(log_level)
+
     kafka_url = os.getenv('KAFKA_URL', 'default_url')
-    tick_topic = 'tttick'
-    min_topic = 'ttmin'
+    tick_topic = 'tt_tick'
+    min_topic = 'tt_min'
 
     tick_streming = ticktominstreaming(kafka_url, tick_topic, min_topic)
     df_stream = tick_streming.read_stream()
     df_normalized =  tick_streming.normalize_timestamp(df_stream)
     ohlc_df = tick_streming.aggregate_ohlc(df_normalized)
-    tick_streming.stream_to_console(ohlc_df)
+    tick_streming.run(ohlc_df)
 
 
 
