@@ -63,7 +63,7 @@ jobs:
           echo "KAFKA_URL=${{ secrets.KAFKA_URL }}" > .env
           echo "TICK_TOPIC=${{ secrets.TICK_TOPIC }}" >> .env
           echo "MIN_TOPIC=${{ secrets.MIN_TOPIC }}" >> .env
-          docker compose down --rmo all
+          docker compose down --rmi all
           docker compose build
           docker compose up -d
           
