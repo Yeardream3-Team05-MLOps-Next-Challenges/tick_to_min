@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import window, col, min, max, first, last, from_json
+from pyspark.sql.functions import window, col, min, max, first, last, from_json, expr
 from pyspark.sql.types import StructType, StringType, DoubleType, LongType, BooleanType
 
 import os
@@ -45,11 +45,15 @@ class ticktominstreaming():
 
         return df
 
-
+    def normalize_timestamp(self, df):
+        # 타임스탬프를 5분 간격으로 정규화
+        df = df.withColumn("timestamp", 
+                        expr("cast((cast(timestamp as long) / 60) * 60 as timestamp)"))
+        return df
+    
     def aggregate_ohlc(self, df):
         # 지연없이
         ohlc_df = df \
-                    .withWatermark("timestamp", "10 seconds") \
                     .groupBy(window(col("timestamp"), "1 minute")) \
                     .agg(first("price").alias("open"),
                         max("price").alias("high"),
@@ -90,12 +94,13 @@ class ticktominstreaming():
 if __name__ == '__main__':
 
     kafka_url = os.getenv('KAFKA_URL', 'default_url')
-    tick_topic = 'stock_data_actions'
+    tick_topic = 'tttick'
     min_topic = 'ttmin'
 
     tick_streming = ticktominstreaming(kafka_url, tick_topic, min_topic)
     df_stream = tick_streming.read_stream()
-    ohlc_df = tick_streming.aggregate_ohlc(df_stream)
+    df_normalized =  tick_streming.normalize_timestamp(df_stream)
+    ohlc_df = tick_streming.aggregate_ohlc(df_normalized)
     tick_streming.stream_to_console(ohlc_df)
 
 
