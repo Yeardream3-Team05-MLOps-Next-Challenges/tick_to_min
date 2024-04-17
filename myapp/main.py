@@ -48,12 +48,6 @@ class ticktominstreaming():
             .withColumn("price", col("p").cast(DoubleType()))
 
         return df
-
-    def normalize_timestamp(self, df):
-        # 타임스탬프를 5분 간격으로 정규화
-        df = df.withColumn("timestamp", 
-                        expr("cast((cast(timestamp as long) / 300) * 300 as timestamp)"))
-        return df
     
     def aggregate_ohlc(self, df):
         # 지연없이
@@ -138,8 +132,7 @@ if __name__ == '__main__':
 
     tick_streming = ticktominstreaming(kafka_url, tick_topic, min_topic)
     df_stream = tick_streming.read_stream()
-    df_normalized =  tick_streming.normalize_timestamp(df_stream)
-    ohlc_df = tick_streming.aggregate_ohlc(df_normalized)
+    ohlc_df = tick_streming.aggregate_ohlc(df_stream)
     tick_streming.run(ohlc_df)
 
 
