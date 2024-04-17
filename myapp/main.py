@@ -127,7 +127,7 @@ if __name__ == '__main__':
     set_logging(log_level)
 
     kafka_url = os.getenv('KAFKA_URL', 'default_url')
-    tick_topic = 'tt_tick'
+    tick_topic = 'stock_data_action'
     min_topic = 'tt_min'
 
     tick_streming = ticktominstreaming(kafka_url, tick_topic, min_topic)
