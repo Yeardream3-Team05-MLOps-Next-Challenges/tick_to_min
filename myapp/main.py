@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import window, col, min, max, first, last, from_json, expr
+from pyspark.sql.functions import window, col, min, max, first, last, from_json, expr, to_timestamp
 from pyspark.sql.types import StructType, StringType, DoubleType, LongType, BooleanType
 
 import os
@@ -25,9 +25,9 @@ class ticktominstreaming():
 
         # 틱 데이터의 스키마 정의
         self.schema = StructType() \
-            .add("T", LongType()) \
-            .add("s", StringType()) \
-            .add("p", StringType()) 
+            .add("현재시간", LongType()) \
+            .add("종목코드", StringType()) \
+            .add("현재가", StringType()) 
         
     def read_stream(self):
         # Kafka 스트림 읽기 설정
@@ -44,9 +44,9 @@ class ticktominstreaming():
             .select("data.*")
 
         # 타임스탬프 및 가격 데이터 타입 변환
-        df = df.withColumn("timestamp", (col('T') / 1000).cast("timestamp")) \
-            .withColumn("price", col("p").cast(DoubleType()))
-
+        df = df.withColumn("timestamp", to_timestamp(col("현재시간").cast("string"), "yyyyMMddHHmmss")) \
+            .withColumn("price", col("현재가").cast(DoubleType()))
+        
         return df
     
     def aggregate_ohlc(self, df):
