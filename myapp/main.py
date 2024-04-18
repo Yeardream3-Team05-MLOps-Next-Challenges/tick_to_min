@@ -25,10 +25,11 @@ class ticktominstreaming():
 
         # 틱 데이터의 스키마 정의
         self.schema = StructType() \
-            .add("현재시간", LongType()) \
             .add("종목코드", StringType()) \
-            .add("현재가", StringType()) 
+            .add("현재가", StringType()) \
+            .add("현재시간", StringType()) 
         
+    
     def read_stream(self):
         # Kafka 스트림 읽기 설정
         df = self.spark \
