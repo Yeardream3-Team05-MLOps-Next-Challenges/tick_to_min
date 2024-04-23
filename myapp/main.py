@@ -55,7 +55,7 @@ class ticktominstreaming():
         # 지연없이
         ohlc_df = df \
                     .withWatermark("timestamp", "10 seconds") \
-                    .groupBy(window(col("종목코드"), col("timestamp"), "5 minute")) \
+                    .groupBy(window(col("timestamp"), "5 minutes"), col("종목코드")) \
                     .agg(first("price").alias("open"),
                         max("price").alias("high"),
                         min("price").alias("low"),
