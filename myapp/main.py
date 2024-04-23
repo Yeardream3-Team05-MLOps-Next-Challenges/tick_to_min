@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import window, col, min, max, first, last, from_json, expr, to_timestamp
+from pyspark.sql.functions import window, col, min, max, first, last, from_json, expr, to_timestamp, concat
 from pyspark.sql.types import StructType, StringType, DoubleType, LongType, BooleanType
 
 import os
@@ -27,7 +27,8 @@ class ticktominstreaming():
         self.schema = StructType() \
             .add("종목코드", StringType()) \
             .add("현재가", StringType()) \
-            .add("현재시간", StringType()) 
+            .add("현재시간", StringType()) \
+            .add("날짜", StringType())
         
     
     def read_stream(self):
@@ -45,7 +46,7 @@ class ticktominstreaming():
             .select("data.*")
 
         # 타임스탬프 및 가격 데이터 타입 변환
-        df = df.withColumn("timestamp", to_timestamp(col("현재시간").cast("string"), "yyyyMMddHHmmss")) \
+        df = df.withColumn("timestamp", to_timestamp(concat(col("날짜"), col("현재시간")), "yyyyMMddHHmmss")) \
             .withColumn("price", col("현재가").cast(DoubleType()))
         
         return df
