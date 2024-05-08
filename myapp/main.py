@@ -7,8 +7,9 @@ import concurrent.futures
 import logging
 
 class ticktominstreaming():
-    def __init__(self, kafka_url, tick_topic, min_topic) -> None:
+    def __init__(self, spark_url, kafka_url, tick_topic, min_topic) -> None:
 
+        self.spark_url = spark_url
         self.kafka_url = kafka_url
         self.tick_topic = tick_topic
         self.min_topic = min_topic
@@ -16,9 +17,10 @@ class ticktominstreaming():
 
         self.spark = SparkSession \
             .builder \
-            .appName("KafkaToSparkStreamingOHLC") \
+            .appName("tick_to_min") \
+            .master(self.spark_url) \
             .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0') \
-            .config('spark.sql.streaming.checkpointLocation', '/tmp/checkpoint') \
+            .config('spark.sql.streaming.checkpointLocation', '/tmp/checkpoint/tick_to_min') \
             .getOrCreate()
         
         self.spark.sparkContext.setLogLevel("WARN")
@@ -128,11 +130,13 @@ if __name__ == '__main__':
     log_level = os.getenv('LOG_LEVEL', 'INFO')
     set_logging(log_level)
 
+    spark_url = os.getenv('SPARK_URL', 'default_url')
     kafka_url = os.getenv('KAFKA_URL', 'default_url')
+
     tick_topic = 'stock_data_action'
     min_topic = 'tt_min'
 
-    tick_streming = ticktominstreaming(kafka_url, tick_topic, min_topic)
+    tick_streming = ticktominstreaming(spark_url, kafka_url, tick_topic, min_topic)
     df_stream = tick_streming.read_stream()
     ohlc_df = tick_streming.aggregate_ohlc(df_stream)
     tick_streming.run(ohlc_df)
