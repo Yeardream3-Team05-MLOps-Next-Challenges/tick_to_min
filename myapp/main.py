@@ -19,7 +19,7 @@ class ticktominstreaming():
             .builder \
             .appName("tick_to_min") \
             .master(self.spark_url) \
-            .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0') \
+            .config('spark.jars.packages', 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0') \
             .config('spark.sql.streaming.checkpointLocation', '/tmp/checkpoint/tick_to_min') \
             .getOrCreate()
         
