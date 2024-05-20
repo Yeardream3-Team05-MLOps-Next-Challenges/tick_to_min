@@ -133,8 +133,8 @@ if __name__ == '__main__':
     spark_url = os.getenv('SPARK_URL', 'default_url')
     kafka_url = os.getenv('KAFKA_URL', 'default_url')
 
-    tick_topic = 'stock_data_action'
-    min_topic = 'tt_min'
+    tick_topic = os.getenv('TICK_TOPIC', 'default_tick')
+    min_topic = os.getenv('MIN_TOPIC', 'default_min')
 
     tick_streming = ticktominstreaming(spark_url, kafka_url, tick_topic, min_topic)
     df_stream = tick_streming.read_stream()
