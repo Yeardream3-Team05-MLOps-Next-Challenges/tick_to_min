@@ -50,7 +50,10 @@ class ticktominstreaming():
         # 타임스탬프 및 가격 데이터 타입 변환
         df = df.withColumn("timestamp", to_timestamp(concat(col("날짜"), col("현재시간")), "yyyyMMddHHmmss")) \
             .withColumn("price", col("현재가").cast(DoubleType()))
-        
+
+        # 'candle' 컬럼 추가
+        df = df.withColumn("candle", '5m')
+
         return df
     
     def aggregate_ohlc(self, df):
@@ -70,6 +73,8 @@ class ticktominstreaming():
         #                  max("price").alias("high"),
         #                  min("price").alias("low"),
         #                  last("price").alias("close"))
+
+
         return ohlc_df
 
     def stream_to_console(self, ohlc_df):
